@@ -1,0 +1,60 @@
+// Prisma schema for Crab Chess
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Player {
+  id          String   @id @default(uuid())
+  displayName String
+  gamesAsWhite Game[]  @relation("WhitePlayer")
+  gamesAsBlack Game[]  @relation("BlackPlayer")
+  scores      Score[]
+  createdAt   DateTime @default(now())
+}
+
+model Game {
+  id            String    @id @default(uuid())
+  whitePlayerId String?
+  blackPlayerId String?
+  whitePlayer   Player?   @relation("WhitePlayer", fields: [whitePlayerId], references: [id])
+  blackPlayer   Player?   @relation("BlackPlayer", fields: [blackPlayerId], references: [id])
+  moves         Move[]
+  status        String    @default("waiting") // waiting, active, checkmate, stalemate, draw
+  result        String?   // white, black, draw
+  pgn           String?
+  fen           String    @default("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+  createdAt     DateTime  @default(now())
+  endedAt       DateTime?
+}
+
+model Move {
+  id        Int      @id @default(autoincrement())
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  moveNum   Int
+  from      String
+  to        String
+  piece     String
+  notation  String
+  fen       String
+  createdAt DateTime @default(now())
+
+  @@index([gameId])
+}
+
+model Score {
+  id       String @id @default(uuid())
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  wins     Int    @default(0)
+  losses   Int    @default(0)
+  draws    Int    @default(0)
+  points   Int    @default(0) // Win=3, Draw=1, Loss=0
+
+  @@unique([playerId])
+}
